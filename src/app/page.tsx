@@ -7,8 +7,10 @@ import {
   getTop5AggressiveDrivers,
   getTop5SeatbeltViolations,
 } from "@/lib/fakeData";
+import Link from "next/link";
 import { FilterBar } from "@/components/FilterBar";
 import { DashboardCard } from "@/components/DashboardCard";
+import { DriverChallenge } from "@/components/DriverChallenge";
 import {
   PieChart,
   Pie,
@@ -163,6 +165,17 @@ export default function DashboardPage() {
               </ResponsiveContainer>
             </div>
           </DashboardCard>
+
+          {/* Gamification: Driver Challenge + link to Leaderboard */}
+          <div className="sm:col-span-2 lg:col-span-1">
+            <DriverChallenge />
+            <Link
+              href="/leaderboard"
+              className="mt-4 block border border-primary/15 bg-surface px-4 py-3 text-center text-sm font-medium text-accent hover:bg-primary/5"
+            >
+              View Leaderboard →
+            </Link>
+          </div>
         </div>
       </div>
     </div>
