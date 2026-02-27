@@ -13,7 +13,7 @@ const roboto = Roboto({
 
 export const metadata: Metadata = {
   title: "Practice Fleet Dashboard",
-  description: "Fleet analytics and gamification demo",
+  description: "Fleet analytics and gamification dashboard",
 };
 
 export default function RootLayout({

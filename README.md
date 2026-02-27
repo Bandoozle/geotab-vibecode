@@ -1,13 +1,13 @@
 # Practice Fleet Dashboard
 
-A hackathon-style fleet dashboard for big trucks with analytics, gamification, and a leaderboard. **Fake data only** – no external APIs or keys. Runs fully offline.
+A hackathon-style fleet dashboard for big trucks with analytics, gamification, and a leaderboard.
 
 ## Tech stack
 
 - **Frontend:** Next.js 14 (App Router), TypeScript, Tailwind CSS
 - **Charts:** Recharts
 - **Map:** SVG placeholder with plotted truck positions
-- **Data:** Seeded fake data in `src/lib/fakeData.ts` (deterministic on refresh)
+- **Data:** Local sample data in `src/lib/fakeData.ts` today; can be wired to the Geotab Data Connector (OData v4) for live fleet KPIs.
 
 ## Run locally
 
@@ -30,5 +30,3 @@ Open [http://localhost:3000](http://localhost:3000).
 - `src/app/` – Pages (Dashboard, Tracking, Leaderboard) and layout
 - `src/components/` – KPICard, ChartCard, TruckTable, MapPanel, DriverDrawer, BadgePill, LeaderboardTable, DriverChallenge, Sidebar
 - `src/lib/fakeData.ts` – Types and seeded data generators
-
-No database or auth. All data is in-memory and regenerated from a fixed seed for a consistent demo.

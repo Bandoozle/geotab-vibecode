@@ -6,12 +6,33 @@ import { FilterBar } from "@/components/FilterBar";
 import { LeaderboardTable } from "@/components/LeaderboardTable";
 
 const TIMEFRAMES = ["Today", "7 days", "30 days"] as const;
+const CATEGORIES = [
+  { id: "vibe", label: "Vibe score" },
+  { id: "safety", label: "Safety" },
+  { id: "fuel", label: "Fuel efficiency" },
+  { id: "onTime", label: "On-time" },
+] as const;
+
+type CategoryId = (typeof CATEGORIES)[number]["id"];
 
 export default function LeaderboardPage() {
   const [timeframe, setTimeframe] = useState<(typeof TIMEFRAMES)[number]>("7 days");
+  const [category, setCategory] = useState<CategoryId>("vibe");
 
-  // Same drivers; in a real app we'd filter by timeframe. For demo we keep order consistent.
-  const drivers = useMemo(() => getDrivers(), []);
+  const drivers = useMemo(() => {
+    const base = getDrivers().slice();
+    switch (category) {
+      case "safety":
+        return base.sort((a, b) => b.safetyScore - a.safetyScore);
+      case "fuel":
+        return base.sort((a, b) => b.mpg - a.mpg);
+      case "onTime":
+        return base.sort((a, b) => b.onTimePercent - a.onTimePercent);
+      case "vibe":
+      default:
+        return base.sort((a, b) => b.totalPoints - a.totalPoints);
+    }
+  }, [category]);
 
   return (
     <div className="min-h-full">
@@ -20,7 +41,7 @@ export default function LeaderboardPage() {
         <header>
           <h1 className="text-2xl font-bold tracking-tight text-primary">Leaderboard</h1>
           <p className="mt-1 text-primary/70">
-            Top drivers by total points. Filter by timeframe (fake but consistent).
+            Ranked drivers with a transparent Vibe score based on safety, fuel efficiency, and on-time performance.
           </p>
         </header>
 
@@ -29,7 +50,7 @@ export default function LeaderboardPage() {
             Winner gets promotion to Better Trucker (no pay raise) + trophy (placeholder)
           </p>
           <p className="mt-1 text-sm text-primary/70">
-            All in good fun – this is a practice dashboard.
+            Use this board for healthy competition and coaching conversations.
           </p>
         </div>
 
@@ -51,7 +72,25 @@ export default function LeaderboardPage() {
           ))}
         </div>
 
-        <LeaderboardTable drivers={drivers} timeframe={timeframe} />
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-sm text-primary/70">Category:</span>
+          {CATEGORIES.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => setCategory(c.id)}
+              className={`border px-4 py-1.5 text-xs font-medium transition-colors ${
+                category === c.id
+                  ? "border-accent bg-accent text-white"
+                  : "border-primary/20 bg-white text-primary hover:bg-surface"
+              }`}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+
+        <LeaderboardTable drivers={drivers} timeframe={timeframe} category={CATEGORIES.find(c => c.id === category)?.label ?? "Vibe score"} />
       </div>
     </div>
   );
