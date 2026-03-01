@@ -1,0 +1,19 @@
+[
+  {
+    "name": "Ready to Roll — Pre-Trip Check-In",
+    "supportEmail": "team@readytoroll.dev",
+    "version": "1.0.0",
+    "isSigned": false,
+    "items": [
+      {
+        "page": "main",
+        "click": "http://localhost:3000/drive-addin/checkin.html",
+        "menuName": {
+          "en": "Pre-Trip Check-In",
+          "fr": "Inspection pré-voyage"
+        },
+        "icon": "http://localhost:3000/geotab.png"
+      }
+    ]
+  }
+]

@@ -9,7 +9,8 @@ const nav = [
   { href: "/tracking", label: "Map" },
   { href: "/tracking", label: "Track" },
   { href: "/leaderboard", label: "Leaderboard" },
-  { href: "/", label: "Safety" },
+  { href: "/safety", label: "Safety" },
+  { href: "/checkin", label: "Check-In" },
   { href: "/", label: "Maintenance" },
   { href: "/", label: "Sustainability" },
   { href: "/", label: "Pages", badge: 12 },
@@ -46,7 +47,9 @@ export function Sidebar() {
             (label === "Dashboard" && pathname === "/") ||
             (label === "Map" && pathname === "/tracking") ||
             (label === "Track" && pathname === "/tracking") ||
-            (label === "Leaderboard" && pathname === "/leaderboard");
+            (label === "Leaderboard" && pathname === "/leaderboard") ||
+            (label === "Safety" && pathname === "/safety") ||
+            (label === "Check-In" && pathname === "/checkin");
           return (
             <Link
               key={label}
