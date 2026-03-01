@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pre-Trip Check-In · Ready to Roll</title>
+  <style>
+    :root {
+      --primary: #25477b;
+      --accent: #0078d3;
+      --surface: #f5f7fa;
+      --white: #ffffff;
+      --border: rgba(37,71,123,0.15);
+      --muted: rgba(37,71,123,0.5);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--surface);
+      color: var(--primary);
+      font-size: 15px;
+    }
+
+    #app { min-height: 100%; display: flex; flex-direction: column; }
+
+    /* ── Header ── */
+    .header {
+      background: var(--primary);
+      color: white;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .header-icon {
+      width: 34px; height: 34px;
+      background: rgba(255,255,255,0.18);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px; flex-shrink: 0;
+    }
+    .header-title { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+    .header-sub   { font-size: 12px; opacity: 0.65; margin-top: 1px; }
+    .driver-chip {
+      margin-left: auto;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 13px; font-weight: 600;
+      white-space: nowrap;
+    }
+
+    /* ── Screens ── */
+    .screen { display: none; flex: 1; flex-direction: column; }
+    .screen.active { display: flex; }
+
+    /* ── Loading ── */
+    .loading-body {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 14px; color: var(--muted); font-size: 14px;
+    }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Form ── */
+    .form-body { flex: 1; overflow-y: auto; padding: 16px; }
+
+    .intro {
+      font-size: 13px; color: var(--muted); margin-bottom: 16px; line-height: 1.5;
+    }
+
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .card-label {
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+
+    .slider-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 12px;
+    }
+    .slider-value { font-size: 14px; font-weight: 700; color: var(--accent); }
+
+    input[type="range"] {
+      width: 100%; height: 4px;
+      accent-color: var(--accent);
+      cursor: pointer; margin-bottom: 7px;
+    }
+    .slider-ends {
+      display: flex; justify-content: space-between;
+      font-size: 12px; color: var(--muted);
+    }
+
+    textarea {
+      width: 100%; resize: none;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      padding: 10px 12px;
+      font-size: 14px; color: var(--primary);
+      font-family: inherit;
+      outline: none; border-radius: 0;
+      -webkit-appearance: none;
+    }
+    textarea:focus { border-color: var(--accent); }
+    textarea::placeholder { color: var(--muted); }
+
+    .btn-submit {
+      display: block; width: 100%;
+      background: var(--accent); color: white;
+      border: none; padding: 16px;
+      font-size: 16px; font-weight: 600;
+      cursor: pointer; letter-spacing: -0.2px;
+    }
+    .btn-submit:active { opacity: 0.85; }
+
+    /* ── Result ── */
+    .result-body { flex: 1; overflow-y: auto; padding: 16px; }
+
+    .score-card {
+      border: 1px solid; padding: 24px 16px;
+      text-align: center; margin-bottom: 12px;
+    }
+    .score-emoji  { font-size: 42px; margin-bottom: 10px; }
+    .score-number { font-size: 52px; font-weight: 800; line-height: 1; }
+    .score-denom  { font-size: 20px; font-weight: 400; }
+    .score-label  { font-size: 17px; font-weight: 700; margin-top: 6px; }
+    .score-driver { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+    .section-title {
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--muted); padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .breakdown-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .breakdown-row:last-child { border-bottom: none; }
+    .breakdown-label { font-size: 14px; }
+    .breakdown-weight { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .breakdown-score { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+    .coaching-text { font-size: 14px; line-height: 1.65; }
+
+    .alert-box {
+      border: 1px solid; padding: 14px 16px;
+      font-size: 14px; margin-bottom: 12px;
+    }
+    .alert-title { font-weight: 700; margin-bottom: 6px; line-height: 1.4; }
+    .alert-note  { font-size: 12px; opacity: 0.65; margin-top: 6px; }
+
+    .btn-secondary {
+      display: block; width: 100%;
+      background: var(--white); color: var(--primary);
+      border: 1px solid var(--border);
+      padding: 14px; font-size: 15px; font-weight: 500;
+      cursor: pointer; font-family: inherit;
+    }
+    .btn-secondary:active { background: var(--surface); }
+
+    /* ── Production note banner ── */
+    .dev-banner {
+      background: #fef9c3; border-bottom: 1px solid #fde047;
+      padding: 8px 16px; font-size: 12px; color: #713f12;
+      text-align: center; flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-icon">🚚</div>
+    <div>
+      <div class="header-title">Ready to Roll</div>
+      <div class="header-sub">Pre-Trip Check-In</div>
+    </div>
+    <div class="driver-chip" id="driver-chip" style="display:none"></div>
+  </div>
+
+  <!-- Dev banner (shown only outside Drive) -->
+  <div id="dev-banner" style="display:none; background:#fef9c3; border-bottom:1px solid #fde047; padding:8px 16px; font-size:12px; color:#713f12; flex-shrink:0;">
+    <div style="margin-bottom:6px;">⚠️ Demo mode — simulating Geotab Drive session. In production, identity comes from <code>api.getSession()</code>.</div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <label style="font-weight:600; white-space:nowrap;">Simulate driver:</label>
+      <select id="demo-driver-select" onchange="switchDemoDriver()" style="flex:1; border:1px solid #fde047; background:white; padding:4px 8px; font-size:12px; color:#713f12; font-family:inherit;">
+      </select>
+    </div>
+  </div>
+
+  <!-- ── Loading screen ── -->
+  <div class="screen active" id="screen-loading">
+    <div class="loading-body">
+      <div class="spinner"></div>
+      <span>Identifying driver…</span>
+    </div>
+  </div>
+
+  <!-- ── Check-in form ── -->
+  <div class="screen" id="screen-form">
+    <div class="form-body">
+      <p class="intro">
+        Takes 30 seconds. Your answers are private — this helps keep you safe, not judge you.
+      </p>
+
+      <!-- Mood -->
+      <div class="card">
+        <div class="slider-header">
+          <div class="card-label">How are you feeling?</div>
+          <div class="slider-value" id="mood-label">Okay</div>
+        </div>
+        <input type="range" id="mood" min="1" max="5" value="3" oninput="updateSlider('mood')">
+        <div class="slider-ends"><span>😴 Exhausted</span><span>😊 Energised</span></div>
+      </div>
+
+      <!-- Stress -->
+      <div class="card">
+        <div class="slider-header">
+          <div class="card-label">Stress level?</div>
+          <div class="slider-value" id="stress-label">Neutral</div>
+        </div>
+        <input type="range" id="stress" min="1" max="5" value="3" oninput="updateSlider('stress')">
+        <div class="slider-ends"><span>😤 Very Stressed</span><span>😌 Very Calm</span></div>
+      </div>
+
+      <!-- Sleep -->
+      <div class="card">
+        <div class="slider-header">
+          <div class="card-label">Hours slept?</div>
+          <div class="slider-value" id="sleep-label">7 hrs</div>
+        </div>
+        <input type="range" id="sleep" min="4" max="9" value="7" oninput="updateSlider('sleep')">
+        <div class="slider-ends"><span>4 hrs</span><span>9+ hrs</span></div>
+      </div>
+
+      <!-- Note -->
+      <div class="card">
+        <div class="card-label" style="margin-bottom:12px">
+          Anything on your mind?
+          <span style="text-transform:none; font-weight:400; font-size:11px;">(optional)</span>
+        </div>
+        <textarea id="note" rows="2" placeholder="Vehicle issue, personal concern, anything relevant…"></textarea>
+      </div>
+
+      <button class="btn-submit" onclick="handleSubmit()">Submit Check-In →</button>
+    </div>
+  </div>
+
+  <!-- ── Result screen ── -->
+  <div class="screen" id="screen-result">
+    <div class="result-body" id="result-body"></div>
+  </div>
+
+</div><!-- #app -->
+
+<script>
+// ─── Demo driver data ──────────────────────────────────────────────────────
+// Mirrors fakeData.ts seeded output.
+// In production: replace with api.call("Get", { typeName: "Driver", ... }) etc.
+const DEMO_DRIVERS = [
+  { name:"Alex Rivera",  username:"alex.rivera",  safetyScore:72, consecutiveDays:6, hoursThisWeek:55, activeFaults:1, truck:"TRK-1000" },
+  { name:"Jamie Chen",   username:"jamie.chen",   safetyScore:91, consecutiveDays:3, hoursThisWeek:38, activeFaults:0, truck:"TRK-1001" },
+  { name:"Morgan Blake", username:"morgan.blake", safetyScore:85, consecutiveDays:4, hoursThisWeek:44, activeFaults:0, truck:"TRK-1002" },
+  { name:"Taylor Ross",  username:"taylor.ross",  safetyScore:78, consecutiveDays:7, hoursThisWeek:62, activeFaults:2, truck:"TRK-1003" },
+  { name:"Casey Kim",    username:"casey.kim",    safetyScore:95, consecutiveDays:2, hoursThisWeek:29, activeFaults:0, truck:"TRK-1004" },
+  { name:"Riley Nguyen", username:"riley.nguyen", safetyScore:68, consecutiveDays:5, hoursThisWeek:51, activeFaults:1, truck:"TRK-1005" },
+  { name:"Jordan Lee",   username:"jordan.lee",   safetyScore:88, consecutiveDays:3, hoursThisWeek:42, activeFaults:0, truck:"TRK-1006" },
+  { name:"Quinn Patel",  username:"quinn.patel",  safetyScore:74, consecutiveDays:6, hoursThisWeek:58, activeFaults:1, truck:"TRK-1007" },
+  { name:"Avery Gomez",  username:"avery.gomez",  safetyScore:93, consecutiveDays:1, hoursThisWeek:22, activeFaults:0, truck:"TRK-1008" },
+  { name:"Sam Torres",   username:"sam.torres",   safetyScore:81, consecutiveDays:4, hoursThisWeek:47, activeFaults:0, truck:"TRK-1009" },
+  { name:"Drew Wallace", username:"drew.wallace", safetyScore:76, consecutiveDays:5, hoursThisWeek:53, activeFaults:2, truck:"TRK-1010" },
+  { name:"Cameron Park", username:"cameron.park", safetyScore:89, consecutiveDays:3, hoursThisWeek:36, activeFaults:0, truck:"TRK-1011" },
+];
+
+const MOOD_LABELS   = ["","Exhausted","Tired","Okay","Good","Energised"];
+const STRESS_LABELS = ["","Very Stressed","Stressed","Neutral","Calm","Very Calm"];
+
+// ─── App state ─────────────────────────────────────────────────────────────
+let currentDriver = null;
+
+// ─── Slider label updates ──────────────────────────────────────────────────
+function updateSlider(id) {
+  const val = parseInt(document.getElementById(id).value);
+  if (id === 'mood')   document.getElementById('mood-label').textContent   = MOOD_LABELS[val]   || val;
+  if (id === 'stress') document.getElementById('stress-label').textContent = STRESS_LABELS[val] || val;
+  if (id === 'sleep')  document.getElementById('sleep-label').textContent  = val + (val >= 9 ? '+ hrs' : ' hrs');
+}
+
+// ─── Screen management ─────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ─── Driver resolution ─────────────────────────────────────────────────────
+// Match Geotab userName (email or short name) to demo data.
+// In production this lookup is replaced by a real api.call("Get", { typeName: "Driver" }).
+function resolveDriver(username) {
+  const lower = (username || '').toLowerCase();
+  const localPart = lower.split('@')[0]; // strip email domain
+  return DEMO_DRIVERS.find(d => localPart.includes(d.username) || d.username.includes(localPart))
+      || DEMO_DRIVERS[0]; // fallback for demo
+}
+
+// ─── Demo driver switcher (browser-only) ───────────────────────────────────
+function switchDemoDriver() {
+  const idx = parseInt(document.getElementById('demo-driver-select').value) || 0;
+  currentDriver = DEMO_DRIVERS[idx];
+  document.getElementById('driver-chip').textContent = currentDriver.name + ' (demo)';
+  document.getElementById('driver-chip').style.display = 'block';
+  // Reset sliders and go back to form
+  document.getElementById('mood').value   = 3;
+  document.getElementById('stress').value = 3;
+  document.getElementById('sleep').value  = 7;
+  document.getElementById('note').value   = '';
+  updateSlider('mood');
+  updateSlider('stress');
+  updateSlider('sleep');
+  showScreen('screen-form');
+}
+
+// ─── Initialisation ────────────────────────────────────────────────────────
+function init() {
+  if (typeof api !== 'undefined') {
+    // ✅ Running inside Geotab Drive — identity guaranteed by session.
+    // The driver logged in with their own credentials; api.getSession()
+    // returns the verified server-side session. No dropdown, no impersonation.
+    //
+    // Production extension: after getSession(), also call:
+    //   api.call("Get", { typeName:"Driver", search:{ userName:session.userName } }, ...)
+    //   api.call("Get", { typeName:"FaultData", search:{ deviceSearch:... } }, ...)
+    //   api.call("Get", { typeName:"Trip",      search:{ fromDate:weekAgo, ... } }, ...)
+    // to replace DEMO_DRIVERS with live Geotab data.
+    api.getSession(function(session) {
+      currentDriver = resolveDriver(session.userName);
+      document.getElementById('driver-chip').textContent = currentDriver.name;
+      document.getElementById('driver-chip').style.display = 'block';
+      showScreen('screen-form');
+    });
+  } else {
+    // Browser / localhost demo fallback (no Drive SDK available).
+    // Populate the driver selector so testers can switch between risk profiles.
+    const sel = document.getElementById('demo-driver-select');
+    DEMO_DRIVERS.forEach((d, i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      // Show risk profile hint so testers know what to expect
+      const behavioral = scoreBehavioral(d.safetyScore);
+      const compliance = scoreCompliance(d.consecutiveDays, d.hoursThisWeek);
+      let hint = behavioral < 48 || compliance < 38 ? '🔴' : behavioral < 65 || compliance < 65 ? '🟡' : '🟢';
+      opt.textContent = `${hint} ${d.name} — safety ${d.safetyScore}, ${d.consecutiveDays}d worked, ${d.activeFaults} fault(s)`;
+      sel.appendChild(opt);
+    });
+    document.getElementById('dev-banner').style.display = 'block';
+    switchDemoDriver(); // sets currentDriver + shows form
+  }
+}
+
+// ─── Scoring engine ────────────────────────────────────────────────────────
+// Mirrors wellnessData.ts — single source of truth for the scoring formula.
+
+function scoreBehavioral(safetyScore) {
+  // Normalise Geotab safety score (65–98 range) to 0–100.
+  // In production: compute from ExceptionEvent counts (speeding, harsh braking, etc.)
+  return Math.round(Math.max(0, Math.min(100, (safetyScore - 65) / 33 * 100)));
+}
+
+function scoreCompliance(consecutiveDays, hoursThisWeek) {
+  // In production: derive from Trip records filtered to the last 7/8 days.
+  const daysScore  = Math.max(0, Math.min(100, (7  - consecutiveDays) / 6  * 100));
+  const hoursScore = Math.max(0, Math.min(100, (70 - hoursThisWeek)   / 38 * 100));
+  return Math.round((daysScore + hoursScore) / 2);
+}
+
+function scoreVehicle(activeFaults) {
+  // In production: count active FaultData records for the driver's Device.
+  if (activeFaults === 0) return 100;
+  if (activeFaults === 1) return 72;
+  if (activeFaults === 2) return 44;
+  return 18;
+}
+
+function scoreWellness(mood, stress, sleepHours) {
+  const moodNorm   = (mood  - 1) / 4 * 100;
+  const stressNorm = (5 - stress) / 4 * 100; // inverted: calm = high score
+  const sleepNorm  = Math.min(100, (sleepHours - 4) / 5 * 100);
+  return Math.round(moodNorm * 0.4 + stressNorm * 0.35 + sleepNorm * 0.25);
+}
+
+function computeReadiness(driver, mood, stress, sleep) {
+  const behavioral = scoreBehavioral(driver.safetyScore);
+  const compliance = scoreCompliance(driver.consecutiveDays, driver.hoursThisWeek);
+  const vehicle    = scoreVehicle(driver.activeFaults);
+  const wellness   = scoreWellness(mood, stress, sleep);
+
+  let total = Math.round(
+    behavioral * 0.35 + compliance * 0.30 + vehicle * 0.20 + wellness * 0.15
+  );
+
+  // Override rule: objective data wins over self-report.
+  // Even a driver who claims mood=5, stress=1, sleep=9 gets capped at At Risk
+  // if their driving history or HOS compliance is objectively poor.
+  if (behavioral < 48 || compliance < 38) {
+    total = Math.min(total, 54);
+  }
+
+  const riskLevel = total >= 80 ? 'green' : total >= 55 ? 'yellow' : 'red';
+
+  const triggers = [];
+  if (behavioral < 65) triggers.push('behavioral');
+  if (compliance < 65) triggers.push('compliance');
+  if (vehicle    < 65) triggers.push('vehicle');
+  if (wellness   < 65) triggers.push('wellness');
+
+  return { behavioral, compliance, vehicle, wellness, total, riskLevel, triggers };
+}
+
+// ─── Coaching messages ─────────────────────────────────────────────────────
+// In production: replace this function with a Geotab Ace API call:
+//   const msg = await geotabAce.query(`Driver ${name} readiness ${total}/100.
+//     Triggered: ${triggers.join(', ')}. Write a 2-sentence supportive coaching note.`);
+function getCoachingMessage(triggers, riskLevel) {
+  if (riskLevel === 'green' && triggers.length === 0) {
+    return "Everything checks out. You're cleared to drive — have a safe shift out there.";
+  }
+  if (triggers.includes('behavioral')) {
+    return "Your recent safety score has some room to improve. Focus on smooth, predictable driving today — easy on the brakes, steady on the accelerator.";
+  }
+  if (triggers.includes('compliance')) {
+    return "You've had a long stretch of driving this week. Your breaks aren't just rules — they exist because fatigue is real. Take them, and consider a shorter route if available.";
+  }
+  if (triggers.includes('vehicle')) {
+    return "Your truck has an active fault code. Let maintenance know before you head out — a small issue caught early beats a breakdown mid-route.";
+  }
+  if (triggers.includes('wellness')) {
+    return "You mentioned feeling off today — that's honest and it matters. Take it a bit easier on the road, build in extra buffer time, and check in with dispatch if it gets worse.";
+  }
+  return "You're in reasonable shape for today. Drive with a bit of extra care and check in with dispatch if anything feels off.";
+}
+
+// ─── Risk style helpers ────────────────────────────────────────────────────
+const RISK = {
+  green:  { color:'#16a34a', bg:'#f0fdf4', border:'#bbf7d0', label:'Ready to Drive',    emoji:'✅' },
+  yellow: { color:'#ca8a04', bg:'#fefce8', border:'#fef08a', label:'Drive with Caution', emoji:'⚠️' },
+  red:    { color:'#dc2626', bg:'#fef2f2', border:'#fecaca', label:'At Risk',             emoji:'🛑' },
+};
+
+function scoreColor(score) {
+  return score >= 80 ? '#16a34a' : score >= 55 ? '#ca8a04' : '#dc2626';
+}
+
+// ─── Form submit ───────────────────────────────────────────────────────────
+function handleSubmit() {
+  const mood   = parseInt(document.getElementById('mood').value);
+  const stress = parseInt(document.getElementById('stress').value);
+  const sleep  = parseInt(document.getElementById('sleep').value);
+  showResult(computeReadiness(currentDriver, mood, stress, sleep));
+}
+
+// ─── Render result ─────────────────────────────────────────────────────────
+function breakdownRow(label, score, weight) {
+  const color = scoreColor(score);
+  return `
+    <div class="breakdown-row">
+      <div>
+        <div class="breakdown-label">${label}</div>
+        <div class="breakdown-weight">${weight} weight</div>
+      </div>
+      <div class="breakdown-score" style="color:${color}">${score}</div>
+    </div>`;
+}
+
+function showResult(result) {
+  const s        = RISK[result.riskLevel];
+  const coaching = getCoachingMessage(result.triggers, result.riskLevel);
+
+  const alertHtml = result.riskLevel !== 'green' ? `
+    <div class="alert-box" style="background:${s.bg}; border-color:${s.border}; color:${s.color}; margin-bottom:12px">
+      <div class="alert-title">
+        ${result.riskLevel === 'red'
+          ? 'Your dispatcher has been notified. Please check in with them before starting your route.'
+          : 'Your dispatcher has been given a heads-up. Drive with extra caution today.'}
+      </div>
+      <div class="alert-note" style="color:rgba(37,71,123,0.6)">
+        This is advisory only — you are not blocked from driving.
+      </div>
+    </div>` : '';
+
+  document.getElementById('result-body').innerHTML = `
+    <div class="score-card" style="background:${s.bg}; border-color:${s.border}">
+      <div class="score-emoji">${s.emoji}</div>
+      <div class="score-number" style="color:${s.color}">
+        ${result.total}<span class="score-denom">/100</span>
+      </div>
+      <div class="score-label" style="color:${s.color}">${s.label}</div>
+      <div class="score-driver">Drive Readiness Score — ${currentDriver.name}</div>
+    </div>
+
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-label" style="margin-bottom:10px">From your safety coach</div>
+      <p class="coaching-text">${coaching}</p>
+    </div>
+
+    <div style="background:white; border:1px solid var(--border); margin-bottom:12px">
+      <div class="section-title">Score Breakdown</div>
+      ${breakdownRow('Driving history',     result.behavioral, '35%')}
+      ${breakdownRow('Hours & compliance',  result.compliance, '30%')}
+      ${breakdownRow('Vehicle health',      result.vehicle,    '20%')}
+      ${breakdownRow('Wellness check-in',   result.wellness,   '15%')}
+    </div>
+
+    ${alertHtml}
+
+    <button class="btn-secondary" onclick="handleReset()">New Check-In</button>
+  `;
+
+  showScreen('screen-result');
+  document.getElementById('result-body').scrollTop = 0;
+}
+
+// ─── Reset ─────────────────────────────────────────────────────────────────
+function handleReset() {
+  document.getElementById('mood').value   = 3;
+  document.getElementById('stress').value = 3;
+  document.getElementById('sleep').value  = 7;
+  document.getElementById('note').value   = '';
+  updateSlider('mood');
+  updateSlider('stress');
+  updateSlider('sleep');
+  showScreen('screen-form');
+}
+
+// ─── Boot ──────────────────────────────────────────────────────────────────
+window.addEventListener('load', init);
+</script>
+</body>
+</html>
