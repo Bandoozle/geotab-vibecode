@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { getDrivers } from "@/lib/fakeData";
+import { useEffect, useMemo, useState } from "react";
+import { getDrivers, type Driver } from "@/lib/fakeData";
 import { FilterBar } from "@/components/FilterBar";
 import { LeaderboardTable } from "@/components/LeaderboardTable";
 
@@ -13,35 +13,84 @@ const CATEGORIES = [
   { id: "onTime", label: "On-time" },
 ] as const;
 
+type Timeframe = (typeof TIMEFRAMES)[number];
 type CategoryId = (typeof CATEGORIES)[number]["id"];
 
+// Demo weighting: makes timeframe "do something" without new backend data
+const TIMEFRAME_MULT: Record<Timeframe, number> = {
+  Today: 0.6,
+  "7 days": 1.0,
+  "30 days": 1.35,
+};
+
+function clamp(n: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, n));
+}
+
 export default function LeaderboardPage() {
-  const [timeframe, setTimeframe] = useState<(typeof TIMEFRAMES)[number]>("7 days");
+  const [timeframe, setTimeframe] = useState<Timeframe>("7 days");
   const [category, setCategory] = useState<CategoryId>("vibe");
 
+  // IMPORTANT: load once on client to prevent RNG drift / hydration mismatch
+  const [baseDrivers, setBaseDrivers] = useState<Driver[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    setBaseDrivers(getDrivers());
+    setIsLoaded(true);
+  }, []);
+
   const drivers = useMemo(() => {
-    const base = getDrivers().slice();
+    const mult = TIMEFRAME_MULT[timeframe];
+    const base = baseDrivers.slice();
+
+    // Create a derived "windowed" view so timeframe changes ranking
+    const withWindowed = base.map((d) => {
+      // Safety / MPG / onTime are stable inputs; we scale them a bit by timeframe.
+      // For vibe, we scale totalPoints but keep it realistic.
+      const safety = clamp(d.safetyScore * (0.9 + 0.1 * mult), 0, 100);
+      const mpg = d.mpg * (0.95 + 0.05 * mult);
+      const onTime = clamp(d.onTimePercent * (0.92 + 0.08 * mult), 0, 100);
+      const vibe = Math.round(d.totalPoints * mult);
+
+      return {
+        ...d,
+        safetyScore: safety,
+        mpg,
+        onTimePercent: onTime,
+        totalPoints: vibe,
+      };
+    });
+
     switch (category) {
       case "safety":
-        return base.sort((a, b) => b.safetyScore - a.safetyScore);
+        return withWindowed.sort((a, b) => b.safetyScore - a.safetyScore);
       case "fuel":
-        return base.sort((a, b) => b.mpg - a.mpg);
+        return withWindowed.sort((a, b) => b.mpg - a.mpg);
       case "onTime":
-        return base.sort((a, b) => b.onTimePercent - a.onTimePercent);
+        return withWindowed.sort((a, b) => b.onTimePercent - a.onTimePercent);
       case "vibe":
       default:
-        return base.sort((a, b) => b.totalPoints - a.totalPoints);
+        return withWindowed.sort((a, b) => b.totalPoints - a.totalPoints);
     }
-  }, [category]);
+  }, [baseDrivers, category, timeframe]);
+
+  const categoryLabel = CATEGORIES.find((c) => c.id === category)?.label ?? "Vibe score";
 
   return (
     <div className="min-h-full">
       <FilterBar />
+
       <div className="space-y-8 p-6">
         <header>
           <h1 className="text-2xl font-bold tracking-tight text-primary">Leaderboard</h1>
           <p className="mt-1 text-primary/70">
             Ranked drivers with a transparent Vibe score based on safety, fuel efficiency, and on-time performance.
+          </p>
+          <p className="mt-2 text-xs text-primary/60">
+            {isLoaded
+              ? "Demo data is seeded and loaded once for stable rankings."
+              : "Loading leaderboard…"}
           </p>
         </header>
 
@@ -90,7 +139,7 @@ export default function LeaderboardPage() {
           ))}
         </div>
 
-        <LeaderboardTable drivers={drivers} timeframe={timeframe} category={CATEGORIES.find(c => c.id === category)?.label ?? "Vibe score"} />
+        <LeaderboardTable drivers={drivers} timeframe={timeframe} category={categoryLabel} />
       </div>
     </div>
   );
