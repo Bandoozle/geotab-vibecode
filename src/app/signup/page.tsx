@@ -63,7 +63,15 @@ export default function SignupPage() {
       });
 
       // 3) Go to dashboard
-      router.push("/app/dashboard");
+      if(role==="manager"){
+        router.push("/app/manager/dashboard");
+      }
+      else if(role==="driver"){
+        router.push("/app/driver/driverDashboard");
+      }
+      else{
+        router.push("/login");
+      }
 
     } catch (err: any) {
       setError(friendlyAuthError(err?.code));
