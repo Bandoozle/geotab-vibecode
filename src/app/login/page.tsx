@@ -39,12 +39,13 @@ export default function LoginPage() {
       <div className="w-full max-w-sm bg-white p-8 rounded-xl shadow-sm border border-gray-200">
         
         {/* Logo */}
-        <div className="flex justify-center mb-6">
+        <div className="flex flex-col items-center" style={{ marginBottom: "20px" }}>
           <Image
-            src="/geotab-logo.png"
-            alt="Geotab Logo"
+            src="/geotab.png"
+            alt="GEOTAB"
             width={140}
-            height={40}
+            height={36}
+            className="h-8 w-auto object-contain"
             priority
           />
         </div>

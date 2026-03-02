@@ -63,7 +63,8 @@ export default function SignupPage() {
       });
 
       // 3) Go to dashboard
-      router.push("/dashboard");
+      router.push("/app/dashboard");
+
     } catch (err: any) {
       setError(friendlyAuthError(err?.code));
       console.error("Signup error:", err);
