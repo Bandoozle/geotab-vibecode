@@ -1,6 +1,6 @@
 "use client";
 
-import { Sidebar } from "@/components/Sidebar";
+import { Sidebar } from "@/components/DriverSidebar";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (

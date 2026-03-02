@@ -35,7 +35,7 @@ export default function HomePage() {
         }
   
         const destination =
-          role === "manager" ? "/app/dashboard" : "/app/driverDashboard";
+          role === "manager" ? "/app/manager/dashboard" : "/app/driver/driverDashboard";
         console.log("Redirecting to:", destination);
         router.replace(destination);
       } catch (err) {

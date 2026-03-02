@@ -4,7 +4,8 @@ import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebaseClient";
+import { auth, db } from "@/lib/firebaseClient";
+import { doc, getDoc } from "firebase/firestore";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,8 +26,14 @@ export default function LoginPage() {
 
     try {
       setLoading(true);
-      await signInWithEmailAndPassword(auth, email, password);
-      router.push("/app/dashboard");
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      const snap = await getDoc(doc(db, "users", userCredential.user.uid));
+      const role = snap.data()?.role;
+  
+      console.log("Role:", role); // remove after debugging
+  
+      router.push(role === "manager" ? "/app/manager/dashboard" : "/app/driver/driverDashboard");
     } catch (err: any) {
       setError("Invalid email or password.");
     } finally {

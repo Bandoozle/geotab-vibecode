@@ -5,13 +5,13 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 const nav = [
-  { href: "/app/dashboard", label: "Dashboard" },
+  // { href: "/app/dashboard", label: "Dashboard" },
   //TODO: add map back
-  { href: "/app/tracking", label: "Map" }, 
+  // { href: "/app/tracking", label: "Map" }, 
   // { href: "/app/tracking", label: "Track" },
-  { href: "/app/leaderboard", label: "Leaderboard" },
-  { href: "/app/safety", label: "Safety" },
-  { href: "/app/checkin", label: "Check-In" },
+  // { href: "/app/leaderboard", label: "Leaderboard" },
+  // { href: "/app/safety", label: "Safety" },
+  { href: "/app/driver/checkin", label: "Check-In" },
 
   // { href: "/app/maintenance", label: "Maintenance" },
   // { href: "/app/sustainability", label: "Sustainability" },
