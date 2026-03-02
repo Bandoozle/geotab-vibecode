@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "firebase": "^12.10.0",
+    "firebase-admin": "^13.7.0",
     "next": "14.2.18",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -19,8 +21,10 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "autoprefixer": "^10.4.20",
+    "dotenv": "^17.3.1",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.15",
+    "tsx": "^4.21.0",
     "typescript": "^5.6.3"
   }
 }

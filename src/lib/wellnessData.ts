@@ -1,53 +1,47 @@
 /**
  * Ready to Roll — Driver Readiness Scoring Engine
  *
- * Combines 4 objective + subjective dimensions into a single Drive Readiness Score.
- * Self-reported wellness is intentionally the LOWEST weight (15%) to prevent
- * drivers from "lying fine" to keep working. Objective data (behavior, compliance,
- * vehicle) drives 85% of the score.
+ * PURE logic.
+ * Fetch drivers/trucks/checkins from Firestore in your data layer, then pass them in.
  *
- * In production: replace coaching message with Geotab Ace API call.
+ * Fixes included:
+ * - Robust matching for driver/truck ids (driver.id vs driver.driverId, truckId vs id)
+ * - Safe fallbacks when trucks/checkins are missing (no more trucks[0]! crash)
+ * - Safer scoring when safetyScore is missing / non-numeric
+ * - Index latest checkins safely (bad timestamps won’t break ordering)
+ * - Uses driverId consistently for checkins lookup
  */
 
-import type { Driver, Truck } from "./fakeData";
-
-// ─── Separate PRNG (does NOT share state with fakeData's rng) ─────────────────
-function seededRng(seed: number): () => number {
-  let s = seed;
-  return () => {
-    s = (s * 9301 + 49297) % 233280;
-    return s / 233280;
-  };
-}
-const wrng = seededRng(99887);
-const wRandInt = (min: number, max: number) =>
-  Math.floor(wrng() * (max - min + 1)) + min;
-const wRandFloat = (min: number, max: number) => wrng() * (max - min) + min;
+import type { DriverDoc, TruckDoc } from "./firestoreTypes";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type RiskLevel = "green" | "yellow" | "red";
 
-export interface WellnessCheckin {
+/**
+ * Match this to your Firestore "checkins" collection.
+ * If your Firestore stores Timestamp, convert it to ISO string in your fetch layer.
+ */
+export type WellnessCheckinDoc = {
   driverId: string;
-  mood: number;       // 1–5  (1 = exhausted, 5 = energised)
-  stress: number;     // 1–5  (1 = very calm, 5 = very stressed)
+  mood: number; // 1–5  (1 = exhausted, 5 = energised)
+  stress: number; // 1–5  (1 = very calm, 5 = very stressed)
   sleepHours: number; // 4–9+
   note?: string;
-  timestamp: string;
-}
+  timestamp: string; // ISO string
+};
 
 export interface DriverReadiness {
-  driver: Driver;
-  truck: Truck;
-  checkin: WellnessCheckin | null;
-  behavioralScore: number;  // 0–100  (35 % weight)
-  complianceScore: number;  // 0–100  (30 % weight)
-  vehicleScore: number;     // 0–100  (20 % weight)
-  wellnessScore: number;    // 0–100  (15 % weight)
-  totalScore: number;       // 0–100  composite
+  driver: DriverDoc;
+  truck: TruckDoc | null; // ✅ allow null when not found
+  checkin: WellnessCheckinDoc | null;
+  behavioralScore: number; // 0–100  (35 % weight)
+  complianceScore: number; // 0–100  (30 % weight)
+  vehicleScore: number; // 0–100  (20 % weight)
+  wellnessScore: number; // 0–100  (15 % weight)
+  totalScore: number; // 0–100  composite
   riskLevel: RiskLevel;
-  triggers: string[];       // which dimensions flagged
+  triggers: string[]; // which dimensions flagged
   coachingMessage: string;
 }
 
@@ -58,47 +52,13 @@ export interface CorrelationPoint {
   riskLevel: RiskLevel;
 }
 
-// ─── Pre-computed module-level data (uses wrng only, never advances fakeData's rng) ──
-
+// ─── Optional: Compliance / vehicle signals ───────────────────────────────────
+// Replace with real Firestore-driven inputs later (or pass them in)
 const CONSECUTIVE_DAYS: Record<string, number> = {};
 const HOURS_THIS_WEEK: Record<string, number> = {};
 const VEHICLE_ACTIVE_FAULTS: Record<string, number> = {};
-const FAKE_CHECKIN_DATA: Omit<WellnessCheckin, "timestamp">[] = [];
 
-for (let i = 0; i < 12; i++) {
-  CONSECUTIVE_DAYS[`DRV-${i}`] = wRandInt(2, 8);
-  HOURS_THIS_WEEK[`DRV-${i}`] = wRandInt(28, 68);
-  VEHICLE_ACTIVE_FAULTS[`TRK-${1000 + i}`] = wRandInt(0, 3);
-}
-
-// 9 out of 12 drivers have checked in today (3 haven't yet)
-for (let i = 0; i < 9; i++) {
-  FAKE_CHECKIN_DATA.push({
-    driverId: `DRV-${i}`,
-    mood: wRandInt(1, 5),
-    stress: wRandInt(1, 5),
-    sleepHours: wRandInt(4, 9),
-  });
-}
-
-// Correlation scatter data (historical, pre-seeded)
-const CORRELATION_DATA: CorrelationPoint[] = (() => {
-  const DRIVER_NAMES = [
-    "Alex", "Jamie", "Morgan", "Jordan", "Riley",
-    "Casey", "Drew", "Sam", "Pat", "Chris", "Terry", "Robin",
-  ];
-  return DRIVER_NAMES.map((name) => {
-    const safetyScore = Math.round(wRandFloat(70, 99));
-    const moodScore = Math.round(
-      Math.max(5, Math.min(100, safetyScore * wRandFloat(0.7, 1.3) - wRandFloat(-10, 20)))
-    );
-    const riskLevel: RiskLevel =
-      moodScore < 40 || safetyScore < 76 ? "red" : moodScore < 62 ? "yellow" : "green";
-    return { name, moodScore, safetyScore, riskLevel };
-  });
-})();
-
-// ─── Exported accessors for compliance data ───────────────────────────────────
+// ─── Exported accessors ───────────────────────────────────────────────────────
 
 export function getConsecutiveDaysWorked(driverId: string): number {
   return CONSECUTIVE_DAYS[driverId] ?? 5;
@@ -108,36 +68,89 @@ export function getHoursThisWeek(driverId: string): number {
   return HOURS_THIS_WEEK[driverId] ?? 45;
 }
 
+// ─── Internal helpers ─────────────────────────────────────────────────────────
+
+function num(v: unknown, fallback = 0): number {
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function clamp01(x: number) {
+  return Math.min(1, Math.max(0, x));
+}
+
+function clamp100(x: number) {
+  return Math.min(100, Math.max(0, x));
+}
+
+function safeTimeMs(iso: string): number {
+  const t = new Date(iso).getTime();
+  return Number.isFinite(t) ? t : 0;
+}
+
+function getDriverId(driver: DriverDoc): string {
+  // Support either shape
+  return (driver as any).id ?? (driver as any).driverId ?? "";
+}
+
+function getTruckId(driver: DriverDoc): string {
+  // Support either shape
+  return (driver as any).truckId ?? (driver as any).truck_id ?? (driver as any).vehicleId ?? "";
+}
+
+function getTruckPrimaryId(truck: TruckDoc): string {
+  return (truck as any).id ?? (truck as any).truckId ?? "";
+}
+
 // ─── Scoring functions ────────────────────────────────────────────────────────
 
-function scoreBehavioral(driver: Driver): number {
-  // safetyScore 72–98 → scaled to 0–100
-  // 98 → 100, 85 → 61, 75 → 30
-  return Math.round(Math.min(100, Math.max(0, ((driver.safetyScore - 65) / 33) * 100)));
+function scoreBehavioral(driver: DriverDoc): number {
+  // Expect something like driver.safetyScore (0-100-ish). If missing, return neutral.
+  const safety = num((driver as any).safetyScore, NaN);
+  if (!Number.isFinite(safety)) return 60;
+
+  // safetyScore 65–98 → scaled to 0–100
+  const scaled = ((safety - 65) / 33) * 100;
+  return Math.round(clamp100(scaled));
 }
 
 function scoreCompliance(driverId: string): number {
+  if (!driverId) return 60;
+
   const days = getConsecutiveDaysWorked(driverId);
   const hours = getHoursThisWeek(driverId);
+
   // HOS limits: 70 hrs/8-day cycle
-  const daysScore = Math.max(0, ((8 - days) / 6) * 100);
-  const hoursScore = Math.max(0, ((70 - hours) / 42) * 100);
+  // More days/hours => worse score
+  const daysScore = clamp100(((8 - num(days, 8)) / 6) * 100);
+  const hoursScore = clamp100(((70 - num(hours, 70)) / 42) * 100);
+
   return Math.round(daysScore * 0.5 + hoursScore * 0.5);
 }
 
-function scoreVehicle(truck: Truck): number {
-  const faults = VEHICLE_ACTIVE_FAULTS[truck.id] ?? 0;
+function scoreVehicle(truck: TruckDoc | null): number {
+  if (!truck) return 60;
+
+  const tid = getTruckPrimaryId(truck);
+  const faults = VEHICLE_ACTIVE_FAULTS[tid] ?? 0;
+
   if (faults === 0) return 100;
   if (faults === 1) return 72;
   if (faults === 2) return 44;
   return 18;
 }
 
-function scoreWellness(checkin: WellnessCheckin | null): number {
+function scoreWellness(checkin: WellnessCheckinDoc | null): number {
   if (!checkin) return 60; // neutral — no self-report available
-  const moodScore = ((checkin.mood - 1) / 4) * 100;
-  const stressScore = ((5 - checkin.stress) / 4) * 100; // inverted: calm = 100
-  const sleepScore = Math.min(100, ((checkin.sleepHours - 4) / 5) * 100);
+
+  const mood = num(checkin.mood, 3);
+  const stress = num(checkin.stress, 3);
+  const sleep = num(checkin.sleepHours, 7);
+
+  const moodScore = clamp100(clamp01((mood - 1) / 4) * 100);
+  const stressScore = clamp100(clamp01((5 - stress) / 4) * 100); // inverted: calm = 100
+  const sleepScore = clamp100(clamp01((sleep - 4) / 5) * 100);
+
   return Math.round(moodScore * 0.4 + stressScore * 0.3 + sleepScore * 0.3);
 }
 
@@ -155,16 +168,15 @@ function getTriggers(
   hasCheckin: boolean,
 ): string[] {
   const out: string[] = [];
-  if (behavioral < 62)          out.push("behavioral");
-  if (compliance < 52)          out.push("compliance");
-  if (vehicle < 50)             out.push("vehicle");
+  if (behavioral < 62) out.push("behavioral");
+  if (compliance < 52) out.push("compliance");
+  if (vehicle < 50) out.push("vehicle");
   if (hasCheckin && wellness < 50) out.push("wellness");
   return out;
 }
 
 /**
  * Returns a coaching message targeted at the driver's primary trigger.
- * In production: replace with a Geotab Ace API call passing driver history + check-in.
  */
 function buildCoachingMessage(triggers: string[], riskLevel: RiskLevel): string {
   if (triggers.includes("compliance"))
@@ -175,38 +187,41 @@ function buildCoachingMessage(triggers: string[], riskLevel: RiskLevel): string 
     return "Your truck has an active fault. Confirm with maintenance before heading out — a short delay beats a roadside breakdown.";
   if (triggers.includes("wellness"))
     return "You mentioned feeling off today — that honesty takes courage. Take it easier out there and pull over if things don't feel right.";
-  if (riskLevel === "green")
-    return "Everything looks good. Stay focused and drive safe.";
+  if (riskLevel === "green") return "Everything looks good. Stay focused and drive safe.";
   return "A few factors are slightly elevated today. Stay alert, take your breaks, and don't rush.";
 }
 
 // ─── Core computation ─────────────────────────────────────────────────────────
 
 export function computeReadiness(
-  driver: Driver,
-  truck: Truck,
-  checkin: WellnessCheckin | null,
+  driver: DriverDoc,
+  truck: TruckDoc | null,
+  checkin: WellnessCheckinDoc | null,
 ): DriverReadiness {
+  const driverId = getDriverId(driver);
+
   const behavioral = scoreBehavioral(driver);
-  const compliance = scoreCompliance(driver.id);
-  const vehicle    = scoreVehicle(truck);
-  const wellness   = scoreWellness(checkin);
+  const compliance = scoreCompliance(driverId);
+  const vehicle = scoreVehicle(truck);
+  const wellness = scoreWellness(checkin);
 
   let total = Math.round(
-    behavioral * 0.35 +
-    compliance * 0.30 +
-    vehicle    * 0.20 +
-    wellness   * 0.15,
+    behavioral * 0.35 + compliance * 0.30 + vehicle * 0.20 + wellness * 0.15,
   );
 
   // Override: objective data wins over self-report.
-  // Even if a driver reports feeling fine, flag them if behavior or compliance is poor.
   if (total > 54 && (behavioral < 48 || compliance < 38)) {
     total = 54;
   }
 
-  const triggers       = getTriggers(behavioral, compliance, vehicle, wellness, checkin !== null);
-  const riskLevel      = getRiskLevel(total);
+  const triggers = getTriggers(
+    behavioral,
+    compliance,
+    vehicle,
+    wellness,
+    checkin !== null,
+  );
+  const riskLevel = getRiskLevel(total);
   const coachingMessage = buildCoachingMessage(triggers, riskLevel);
 
   return {
@@ -215,41 +230,90 @@ export function computeReadiness(
     checkin,
     behavioralScore: behavioral,
     complianceScore: compliance,
-    vehicleScore:    vehicle,
-    wellnessScore:   wellness,
-    totalScore:      total,
+    vehicleScore: vehicle,
+    wellnessScore: wellness,
+    totalScore: total,
     riskLevel,
     triggers,
     coachingMessage,
   };
 }
 
-// ─── Fleet-level helpers ──────────────────────────────────────────────────────
+// ─── Fleet-level helpers (Firestore-driven) ───────────────────────────────────
 
-export function generateFakeCheckins(): WellnessCheckin[] {
-  const now = new Date();
-  return FAKE_CHECKIN_DATA.map((d, i) => ({
-    ...d,
-    timestamp: new Date(now.getTime() - (i * 7 + 5) * 60 * 1000).toISOString(),
-  }));
+/**
+ * Build a map of latest checkin per driver.
+ * Assumes `timestamp` is an ISO string.
+ */
+export function indexLatestCheckins(
+  checkins: WellnessCheckinDoc[],
+): Record<string, WellnessCheckinDoc> {
+  const latest: Record<string, WellnessCheckinDoc> = {};
+
+  for (const c of checkins ?? []) {
+    if (!c?.driverId) continue;
+
+    const prev = latest[c.driverId];
+    if (!prev) {
+      latest[c.driverId] = c;
+      continue;
+    }
+
+    if (safeTimeMs(c.timestamp) > safeTimeMs(prev.timestamp)) {
+      latest[c.driverId] = c;
+    }
+  }
+
+  return latest;
 }
 
-export function getFleetReadiness(drivers: Driver[], trucks: Truck[]): DriverReadiness[] {
-  const checkins = generateFakeCheckins();
-  return drivers.map((driver) => {
-    const truck   = trucks.find((t) => t.id === driver.truckId) ?? trucks[0]!;
-    const checkin = checkins.find((c) => c.driverId === driver.id) ?? null;
+/**
+ * ✅ Main Firestore-driven fleet readiness.
+ * - drivers: from Firestore drivers collection
+ * - trucks: from Firestore trucks collection
+ * - checkins: from Firestore checkins collection (today or recent)
+ */
+export function getFleetReadiness(
+  drivers: DriverDoc[],
+  trucks: TruckDoc[],
+  checkins: WellnessCheckinDoc[],
+): DriverReadiness[] {
+  const latestByDriver = indexLatestCheckins(checkins);
+
+  // Pre-index trucks for speed + reliability
+  const truckById = new Map<string, TruckDoc>();
+  for (const t of trucks ?? []) {
+    const id = getTruckPrimaryId(t);
+    if (id) truckById.set(id, t);
+  }
+
+  return (drivers ?? []).map((driver) => {
+    const driverId = getDriverId(driver);
+    const truckId = getTruckId(driver);
+
+    const truck = (truckId ? truckById.get(truckId) : null) ?? null;
+    const checkin = (driverId ? latestByDriver[driverId] : null) ?? null;
+
     return computeReadiness(driver, truck, checkin);
   });
 }
 
-export function getAtRiskDrivers(drivers: Driver[], trucks: Truck[]): DriverReadiness[] {
-  return getFleetReadiness(drivers, trucks).filter((r) => r.riskLevel !== "green");
+export function getAtRiskDrivers(
+  drivers: DriverDoc[],
+  trucks: TruckDoc[],
+  checkins: WellnessCheckinDoc[],
+): DriverReadiness[] {
+  return getFleetReadiness(drivers, trucks, checkins).filter(
+    (r) => r.riskLevel !== "green",
+  );
 }
 
+// Keeping the API, but returning empty for now (so nothing breaks).
 export function getCorrelationData(): CorrelationPoint[] {
-  return CORRELATION_DATA;
+  return [];
 }
+
+// ─── Styling helpers ──────────────────────────────────────────────────────────
 
 export function riskColor(level: RiskLevel): string {
   return level === "green" ? "#16a34a" : level === "yellow" ? "#ca8a04" : "#dc2626";
