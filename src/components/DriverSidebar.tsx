@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 const nav = [
   { href: "/app/dashboard", label: "Dashboard" },
   //TODO: add map back
-  // { href: "/app/tracking", label: "Map" }, 
+  { href: "/app/tracking", label: "Map" }, 
   // { href: "/app/tracking", label: "Track" },
   { href: "/app/leaderboard", label: "Leaderboard" },
   { href: "/app/safety", label: "Safety" },

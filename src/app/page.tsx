@@ -14,24 +14,36 @@ export default function HomePage() {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
-      // Not logged in -> login
       if (!user) {
         router.replace("/login");
         return;
       }
-
-      // Logged in -> check role from users/{uid}
+  
       try {
         const snap = await getDoc(doc(db, "users", user.uid));
-        const role = (snap.data()?.role as UserRole | undefined) ?? "driver";
-
-        router.replace(role === "manager" ? "/dashboard" : "/tracking");
-      } catch {
-        // If something is wrong, send to login
+        console.log("UID:", user.uid);
+        console.log("Doc exists:", snap.exists());
+        console.log("Full data:", JSON.stringify(snap.data()));
+        console.log("Role:", snap.data()?.role);
+  
+        const role = snap.data()?.role as UserRole | undefined;
+  
+        if (!role) {
+          console.log("No role found, going to login");
+          router.replace("/login");
+          return;
+        }
+  
+        const destination =
+          role === "manager" ? "/app/dashboard" : "/app/driverDashboard";
+        console.log("Redirecting to:", destination);
+        router.replace(destination);
+      } catch (err) {
+        console.error("Error:", err);
         router.replace("/login");
       }
     });
-
+  
     return () => unsub();
   }, [router]);
 

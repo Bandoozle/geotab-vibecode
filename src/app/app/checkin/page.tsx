@@ -67,7 +67,7 @@ export default function CheckinPage() {
         <div className="mb-6">
           <h1 className="text-xl font-bold text-primary">Pre-Trip Check-In</h1>
           <p className="mt-1 text-sm text-primary/60">
-            Takes 30 seconds. Your responses are private — the system uses them to keep you safe, not to judge you.
+            Your responses are private, the system uses them to keep you safe.
           </p>
         </div>
 
