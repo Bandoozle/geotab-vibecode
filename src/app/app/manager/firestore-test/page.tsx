@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { collection, getDocs, limit, query } from "firebase/firestore";
 import { db } from "@/lib/firebaseClient";
+import { PageContent } from "@/components/PageContent";
 
 export default function FirestoreTestPage() {
   const [status, setStatus] = useState("Testing…");
@@ -33,10 +34,12 @@ export default function FirestoreTestPage() {
   }, []);
 
   return (
-    <div style={{ padding: 24 }}>
-      <h1>Firestore Test</h1>
-      <p>{status}</p>
-      <p>Open DevTools Console (F12) to see details.</p>
-    </div>
+    <PageContent>
+      <header>
+        <h1 className="text-2xl font-bold tracking-tight text-primary">Firestore Test</h1>
+        <p className="mt-1 text-muted">{status}</p>
+        <p className="mt-1 text-xs text-muted">Open DevTools Console (F12) to see details.</p>
+      </header>
+    </PageContent>
   );
 }

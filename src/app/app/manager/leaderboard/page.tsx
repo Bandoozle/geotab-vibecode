@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { LeaderboardTable } from "@/components/LeaderboardTable";
+import { PageContent } from "@/components/PageContent";
 import type { Driver } from "@/lib/fakeData"; // ✅ use the exact type LeaderboardTable expects
 
 import { db } from "@/lib/firebaseClient";
@@ -143,8 +144,8 @@ export default function LeaderboardPage() {
     CATEGORIES.find((c) => c.id === category)?.label ?? "Vibe score";
 
   return (
-    <div className="min-h-full">
-      <div className="space-y-8 p-6">
+    <PageContent>
+      <div className="space-y-8">
         <header>
           <h1 className="text-2xl font-bold tracking-tight text-primary">
             Leaderboard
@@ -225,6 +226,6 @@ export default function LeaderboardPage() {
           category={categoryLabel}
         />
       </div>
-    </div>
+    </PageContent>
   );
 }

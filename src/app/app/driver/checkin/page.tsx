@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getDrivers, getTrucks, type Driver } from "@/lib/fakeData";
+import { PageContent } from "@/components/PageContent";
 import {
   computeReadiness,
   riskColor,
@@ -61,26 +62,23 @@ export default function CheckinPage() {
   }
 
   return (
-    <div className="min-h-full bg-surface">
-      <div className="mx-auto max-w-lg p-6">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-xl font-bold text-primary">Pre-Trip Check-In</h1>
-          <p className="mt-1 text-sm text-primary/60">
-            Your responses are private, the system uses them to keep you safe.
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-5">
+    <PageContent maxWidth="form">
+      <div className="mb-6">
+        <h1 className="text-xl font-bold text-primary">Pre-Trip Check-In</h1>
+        <p className="mt-1 text-sm text-muted">
+          Your responses are private, the system uses them to keep you safe.
+        </p>
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-5">
           {/* Driver selector */}
-          <div className="border border-primary/15 bg-white p-4">
+          <div className="rounded-lg border border-primary/15 bg-white p-4">
             <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-primary/70">
               Who are you?
             </label>
             <select
               value={driverId}
               onChange={(e) => setDriverId(e.target.value)}
-              className="w-full border border-primary/20 bg-surface px-3 py-2 text-sm text-primary focus:border-accent focus:outline-none"
+              className="w-full rounded-lg border border-primary/20 bg-surface px-3 py-2 text-sm text-primary focus:border-accent focus:outline-none"
             >
               {drivers.map((d) => (
                 <option key={d.id} value={d.id}>
@@ -127,7 +125,7 @@ export default function CheckinPage() {
           />
 
           {/* Optional note */}
-          <div className="border border-primary/15 bg-white p-4">
+          <div className="rounded-lg border border-primary/15 bg-white p-4">
             <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-primary/70">
               Anything on your mind? <span className="font-normal normal-case text-primary/40">(optional)</span>
             </label>
@@ -136,19 +134,18 @@ export default function CheckinPage() {
               onChange={(e) => setNote(e.target.value)}
               rows={2}
               placeholder="Personal issue, vehicle concern, anything relevant..."
-              className="w-full resize-none border border-primary/20 bg-surface px-3 py-2 text-sm text-primary placeholder:text-primary/40 focus:border-accent focus:outline-none"
+              className="w-full resize-none rounded-lg border border-primary/20 bg-surface px-3 py-2 text-sm text-primary placeholder:text-primary/40 focus:border-accent focus:outline-none"
             />
           </div>
 
           <button
             type="submit"
-            className="w-full bg-accent py-3 text-sm font-semibold text-white hover:bg-accent/90 transition-colors"
+            className="w-full rounded-lg bg-accent py-3 text-sm font-semibold text-white hover:bg-accent/90 transition-colors"
           >
             Submit Check-In
           </button>
         </form>
-      </div>
-    </div>
+    </PageContent>
   );
 }
 
@@ -174,7 +171,7 @@ function SliderField({
   onChange: (v: number) => void;
 }) {
   return (
-    <div className="border border-primary/15 bg-white p-4">
+    <div className="rounded-lg border border-primary/15 bg-white p-4">
       <div className="mb-3 flex items-center justify-between">
         <label className="text-xs font-semibold uppercase tracking-wide text-primary/70">
           {label}
@@ -187,9 +184,9 @@ function SliderField({
         max={max}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-accent"
+        className="w-full accent-accent rounded-full"
       />
-      <div className="mt-1 flex justify-between text-xs text-primary/40">
+      <div className="mt-1 flex justify-between text-xs text-primary font-medium">
         <span>{leftLabel}</span>
         <span>{rightLabel}</span>
       </div>
@@ -209,11 +206,10 @@ function ReadinessResult({ result, onReset }: { result: DriverReadiness; onReset
     result.riskLevel === "green" ? "✅" : result.riskLevel === "yellow" ? "⚠️" : "🛑";
 
   return (
-    <div className="min-h-full bg-surface">
-      <div className="mx-auto max-w-lg p-6">
-        {/* Score card */}
-        <div
-          className="mb-5 border p-6 text-center"
+    <PageContent maxWidth="form">
+      {/* Score card */}
+      <div
+          className="mb-5 rounded-lg border p-6 text-center"
           style={{ backgroundColor: bg, borderColor: border }}
         >
           <div className="mb-2 text-4xl">{emoji}</div>
@@ -230,7 +226,7 @@ function ReadinessResult({ result, onReset }: { result: DriverReadiness; onReset
         </div>
 
         {/* Coaching message */}
-        <div className="mb-5 border border-primary/15 bg-white p-4">
+        <div className="mb-5 rounded-lg border border-primary/15 bg-white p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-primary/50 mb-1">
             From your safety coach
           </p>
@@ -238,7 +234,7 @@ function ReadinessResult({ result, onReset }: { result: DriverReadiness; onReset
         </div>
 
         {/* Score breakdown */}
-        <div className="mb-5 border border-primary/15 bg-white">
+        <div className="mb-5 overflow-hidden rounded-lg border border-primary/15 bg-white">
           <div className="border-b border-primary/10 px-4 py-3">
             <span className="text-xs font-semibold uppercase tracking-wide text-primary/70">
               Score breakdown
@@ -255,7 +251,7 @@ function ReadinessResult({ result, onReset }: { result: DriverReadiness; onReset
         {/* At-risk message for Yellow/Red */}
         {result.riskLevel !== "green" && (
           <div
-            className="mb-5 border p-4 text-sm"
+            className="mb-5 rounded-lg border p-4 text-sm"
             style={{ backgroundColor: bg, borderColor: border, color }}
           >
             <p className="font-semibold mb-1">
@@ -269,14 +265,14 @@ function ReadinessResult({ result, onReset }: { result: DriverReadiness; onReset
           </div>
         )}
 
-        <button
-          onClick={onReset}
-          className="w-full border border-primary/20 bg-white py-3 text-sm font-medium text-primary hover:bg-surface transition-colors"
-        >
-          New Check-In
-        </button>
-      </div>
-    </div>
+      <button
+        type="button"
+        onClick={onReset}
+        className="w-full border border-slate-300 bg-white py-3 text-sm font-medium text-primary hover:bg-slate-50 transition-colors rounded-lg"
+      >
+        New Check-In
+      </button>
+    </PageContent>
   );
 }
 

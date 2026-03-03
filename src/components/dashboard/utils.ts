@@ -1,3 +1,4 @@
+import type { DriverReadiness } from "@/lib/wellnessData";
 import type { DashboardFilters } from "./types";
 
 export function applyGenericFilters<T extends Record<string, any>>(
@@ -17,6 +18,16 @@ export function applyGenericFilters<T extends Record<string, any>>(
   }
 
   return out;
+}
+
+export function matchesReadinessFilters(
+  r: DriverReadiness,
+  filters: DashboardFilters
+): boolean {
+  if (filters.risk !== "all" && r.riskLevel !== filters.risk) return false;
+  const vt = (r.driver as any)?.vehicleType ?? (r.driver as any)?.vehicle ?? null;
+  if (filters.vehicleType && vt && vt !== filters.vehicleType) return false;
+  return true;
 }
 
 export function sum(nums: number[]) {

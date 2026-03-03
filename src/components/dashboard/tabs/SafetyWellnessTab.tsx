@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
 import type { DashboardFilters } from "@/components/dashboard/types";
+import { matchesReadinessFilters } from "@/components/dashboard/utils";
 import type { DriverReadiness, RiskLevel } from "@/lib/wellnessData";
 
 import { DashboardCard } from "@/components/DashboardCard";
@@ -26,7 +27,7 @@ import {
   Line,
 } from "recharts";
 
-const PIE_COLORS = ["#16a34a", "#ca8a04", "#dc2626", "#898989"];
+const PIE_COLORS = ["#22c55e", "#eab308", "#ef4444", "#94a3b8"];
 const GRID_STROKE = "#eff2f7";
 const AVG_STROKE = "#f59e0b";
 const AXIS_STROKE = "#25477b";
@@ -75,15 +76,6 @@ function KpiCard({
       ) : null}
     </div>
   );
-}
-
-function matchesReadinessFilters(r: DriverReadiness, filters: DashboardFilters) {
-  if (filters.risk !== "all" && r.riskLevel !== filters.risk) return false;
-
-  const vt = (r.driver as any)?.vehicleType ?? (r.driver as any)?.vehicle ?? null;
-  if (filters.vehicleType && vt && vt !== filters.vehicleType) return false;
-
-  return true;
 }
 
 export function SafetyWellnessTab({

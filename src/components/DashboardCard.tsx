@@ -7,18 +7,11 @@ interface DashboardCardProps {
 
 export function DashboardCard({ title, children }: DashboardCardProps) {
   return (
-    <div className="border border-primary/15 bg-white">
-      <div className="flex items-center justify-between border-b border-surface bg-surface px-4 py-3">
+    <div className="overflow-hidden rounded-card border border-slate-200/80 bg-surfaceCard shadow-card">
+      <div className="border-b border-slate-100 bg-slate-50/60 px-5 py-3.5">
         <h3 className="text-sm font-semibold text-primary">{title}</h3>
-        <button
-          type="button"
-          className="text-primary/60 hover:text-primary"
-          aria-label="Options"
-        >
-          ⋮
-        </button>
       </div>
-      <div className="p-4">{children}</div>
+      <div className="p-5">{children}</div>
     </div>
   );
 }

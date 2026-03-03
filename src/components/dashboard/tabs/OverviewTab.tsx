@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import type { DashboardFilters } from "@/components/dashboard/types";
+import { applyGenericFilters, matchesReadinessFilters } from "@/components/dashboard/utils";
 import type { DriverReadiness } from "@/lib/wellnessData";
 
 import { DashboardCard } from "@/components/DashboardCard";
@@ -43,10 +44,23 @@ export function OverviewTab({
 }) {
   const readiness = useMemo(() => readinessRaw ?? [], [readinessRaw]);
 
-  // ✅ No group filtering
-  const mileageAll = useMemo(() => mileageRaw ?? [], [mileageRaw]);
-  const fuelAll = useMemo(() => fuelRaw ?? [], [fuelRaw]);
-  const seatbeltAll = useMemo(() => seatbeltRaw ?? [], [seatbeltRaw]);
+  const readinessFiltered = useMemo(
+    () => readiness.filter((r) => matchesReadinessFilters(r, filters)),
+    [readiness, filters]
+  );
+
+  const mileageAll = useMemo(
+    () => applyGenericFilters(mileageRaw ?? [], filters),
+    [mileageRaw, filters]
+  );
+  const fuelAll = useMemo(
+    () => applyGenericFilters(fuelRaw ?? [], filters),
+    [fuelRaw, filters]
+  );
+  const seatbeltAll = useMemo(
+    () => applyGenericFilters(seatbeltRaw ?? [], filters),
+    [seatbeltRaw, filters]
+  );
 
   const totalMiles = useMemo(
     () => mileageAll.reduce((s, r) => s + Number(r.miles ?? 0), 0),
@@ -63,12 +77,12 @@ export function OverviewTab({
     [seatbeltAll]
   );
 
-  // Risk summary (click bar = risk filter) ✅ keep this
+  // Risk summary (click bar = risk filter), uses filtered readiness
   const riskBars = useMemo(() => {
-    const green = readiness.filter((r) => r.riskLevel === "green").length;
-    const yellow = readiness.filter((r) => r.riskLevel === "yellow").length;
-    const red = readiness.filter((r) => r.riskLevel === "red").length;
-    const noCheckin = readiness.filter((r) => r.checkin === null).length;
+    const green = readinessFiltered.filter((r) => r.riskLevel === "green").length;
+    const yellow = readinessFiltered.filter((r) => r.riskLevel === "yellow").length;
+    const red = readinessFiltered.filter((r) => r.riskLevel === "red").length;
+    const noCheckin = readinessFiltered.filter((r) => r.checkin === null).length;
 
     return [
       { risk: "green", count: green },
@@ -76,7 +90,7 @@ export function OverviewTab({
       { risk: "red", count: red },
       { risk: "noCheckin", count: noCheckin },
     ];
-  }, [readiness]);
+  }, [readinessFiltered]);
 
   // Fuel by month trend (aggregated)
   const fuelByMonth = useMemo(() => {

@@ -22,7 +22,7 @@ import {
 } from "recharts";
 
 import type { DashboardFilters } from "@/components/dashboard/types";
-import { avg, groupSum } from "@/components/dashboard/utils";
+import { applyGenericFilters, avg, groupSum } from "@/components/dashboard/utils";
 
 const PIE_COLORS = ["#25477b", "#0078d3", "#5a7ba8", "#3d8fd9", "#7aaafd"];
 const BAR_FILL = "#25477b";
@@ -113,12 +113,26 @@ export function OperationsTab({
 }) {
   const isSmDown = useIsSmDown();
 
-  // ✅ No group filtering anywhere
-  const mileageAll = useMemo(() => mileageRaw ?? [], [mileageRaw]);
-  const fuelAll = useMemo(() => fuelRaw ?? [], [fuelRaw]);
-  const aggressiveAll = useMemo(() => aggressiveRaw ?? [], [aggressiveRaw]);
-  const seatbeltAll = useMemo(() => seatbeltRaw ?? [], [seatbeltRaw]);
-  const idlingData = useMemo(() => (idlingRaw ?? []).filter(Boolean), [idlingRaw]);
+  const mileageAll = useMemo(
+    () => applyGenericFilters(mileageRaw ?? [], filters),
+    [mileageRaw, filters]
+  );
+  const fuelAll = useMemo(
+    () => applyGenericFilters(fuelRaw ?? [], filters),
+    [fuelRaw, filters]
+  );
+  const aggressiveAll = useMemo(
+    () => applyGenericFilters(aggressiveRaw ?? [], filters),
+    [aggressiveRaw, filters]
+  );
+  const seatbeltAll = useMemo(
+    () => applyGenericFilters(seatbeltRaw ?? [], filters),
+    [seatbeltRaw, filters]
+  );
+  const idlingData = useMemo(
+    () => applyGenericFilters((idlingRaw ?? []).filter(Boolean), filters),
+    [idlingRaw, filters]
+  );
 
   const dayKeys = useMemo(() => {
     const rawDays = uniqStrings((mileageAll ?? []).map((r) => r.day));

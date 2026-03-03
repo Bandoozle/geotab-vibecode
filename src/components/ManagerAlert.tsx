@@ -52,21 +52,13 @@ export function ManagerAlert({ readiness }: ManagerAlertProps) {
 
   return (
     <div className="border" style={{ borderColor: border, backgroundColor: bg }}>
-      {/* Header */}
-      <div className="flex items-center justify-between border-b px-4 py-3" style={{ borderColor: border }}>
-        <div className="flex items-center gap-3">
-          <ReadinessBadge level={riskLevel} score={totalScore} />
-          <div>
-            <span className="text-sm font-semibold text-primary">{driver.name}</span>
-            <span className="ml-2 text-xs text-primary/50">{driver.truckId}{days}</span>
-          </div>
+      {/* Header: risk badge on top, name + truck below */}
+      <div className="flex flex-col gap-2 border-b px-4 py-3" style={{ borderColor: border }}>
+        <ReadinessBadge level={riskLevel} score={totalScore} />
+        <div className="min-w-0">
+          <span className="text-sm font-semibold text-primary block">{driver.name}</span>
+          <span className="text-xs text-primary/50 block">{driver.truckId}{days}</span>
         </div>
-        <button
-          onClick={() => setAcknowledged(true)}
-          className="border border-primary/20 bg-white px-3 py-1 text-xs font-medium text-primary hover:bg-surface transition-colors"
-        >
-          Acknowledge
-        </button>
       </div>
 
       {/* Triggered dimensions */}
@@ -85,11 +77,22 @@ export function ManagerAlert({ readiness }: ManagerAlertProps) {
       )}
 
       {/* Recommended action */}
-      <div className="px-4 py-3">
+      <div className="px-4 pt-3">
         <p className="text-xs text-primary/70">
           <span className="font-semibold text-primary">Recommended: </span>
           {action}
         </p>
+      </div>
+
+      {/* Acknowledge at bottom */}
+      <div className="px-4 pb-4 pt-3">
+        <button
+          type="button"
+          onClick={() => setAcknowledged(true)}
+          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        >
+          Acknowledge
+        </button>
       </div>
     </div>
   );

@@ -7,7 +7,6 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebaseClient";
 
 import type { DashboardFilters } from "@/components/dashboard/types";
-import { FilterBar } from "@/components/FilterBar";
 
 import {
   getFleetReadiness,
@@ -16,6 +15,7 @@ import {
 } from "@/lib/wellnessData";
 
 import type { DriverDoc, TruckDoc } from "@/lib/firestoreTypes";
+import { PageContent } from "@/components/PageContent";
 import { SafetyWellnessTab } from "@/components/dashboard/tabs/SafetyWellnessTab";
 
 type AnyObj = Record<string, any>;
@@ -124,23 +124,19 @@ export default function SafetyPage() {
   }, []);
 
   return (
-    <div className="min-h-full">
-      <FilterBar />
-      <div className="px-6 pb-10 pt-8">
-        <div className="mb-6">
-          <div className="text-lg font-semibold text-primary">Safety</div>
-          <div className="mt-1 text-xs text-primary/50">
-            {isLoaded ? "Loaded from Firestore." : "Loading from Firestore…"}
-          </div>
-        </div>
-
+    <PageContent>
+        <header className="mb-6">
+          <h1 className="text-2xl font-bold tracking-tight text-primary">Fleet readiness</h1>
+          <p className="mt-1 text-muted">
+            {isLoaded ? "Data from Firestore." : "Loading…"}
+          </p>
+        </header>
         <SafetyWellnessTab
           isLoaded={isLoaded}
           readinessRaw={readinessRaw}
           filters={filters}
           setFilters={setFilters}
         />
-      </div>
-    </div>
+      </PageContent>
   );
 }

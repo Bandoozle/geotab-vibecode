@@ -82,8 +82,8 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-surface flex items-center justify-center px-6">
-      <div className="w-full max-w-md rounded-2xl border border-primary/15 bg-white p-6 shadow-sm">
+    <div className="min-h-screen bg-surface flex items-center justify-center px-6 py-8">
+      <div className="w-full max-w-md rounded-card border border-slate-200 bg-surfaceCard p-6 shadow-card">
         <div className="flex flex-col items-center">
           <Image
             src="/geotab.png"

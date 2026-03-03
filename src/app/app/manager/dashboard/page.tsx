@@ -6,10 +6,10 @@ import { collection, getDocs, limit, query } from "firebase/firestore";
 import { db } from "@/lib/firebaseClient";
 
 import { getFleetReadiness, type DriverReadiness, type RiskLevel } from "@/lib/wellnessData";
-import { FilterBar } from "@/components/FilterBar";
 import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
 import type { DashboardFilters } from "@/components/dashboard/types";
 
+import { PageContent } from "@/components/PageContent";
 import { OverviewTab } from "@/components/dashboard/tabs/OverviewTab";
 import { OperationsTab } from "@/components/dashboard/tabs/OperationsTab";
 import { SafetyWellnessTab } from "@/components/dashboard/tabs/SafetyWellnessTab";
@@ -182,16 +182,12 @@ export default function DashboardPage() {
     !!filters.vehicleType || !!filters.month || !!filters.day || filters.risk !== "all";
 
   return (
-    <div className="min-h-full">
-      <FilterBar />
-
-      <div className="px-6 pb-10 pt-8">
+    <PageContent>
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="text-lg font-semibold text-primary">Manager Fleet Dashboard</div>
-            <div className="mt-1 text-sm text-primary/60">Filters apply across all tabs.</div>
-
-            <div className="mt-2 text-xs text-primary/50">
+            <h1 className="text-2xl font-bold tracking-tight text-primary">Manager Fleet Dashboard</h1>
+            <p className="mt-1 text-muted">Filters apply across all tabs.</p>
+            <p className="mt-2 text-xs text-muted">
               {loadError ? (
                 <span className="text-red-600">Load error: {loadError}</span>
               ) : isLoaded ? (
@@ -199,12 +195,11 @@ export default function DashboardPage() {
               ) : (
                 "Loading from Firestore…"
               )}
-            </div>
-
-            <div className="mt-1 text-[11px] text-primary/40">
+            </p>
+            <p className="mt-1 text-[11px] text-muted">
               drivers={drivers.length} trucks={trucks.length} checkins={checkins.length} mileage=
               {mileageRaw.length} fuel={fuelRaw.length}
-            </div>
+            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -331,7 +326,6 @@ export default function DashboardPage() {
             safetyWellness: "Safety + Wellness",
           }}
         />
-      </div>
-    </div>
+      </PageContent>
   );
 }

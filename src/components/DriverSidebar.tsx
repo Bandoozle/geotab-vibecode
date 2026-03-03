@@ -25,11 +25,11 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex min-h-full w-56 shrink-0 flex-col self-stretch border-r border-primary/15 bg-white shadow-[2px_0_6px_rgba(0,0,0,0.06),4px_0_14px_rgba(0,0,0,0.1)]">
-      <div className="flex shrink-0 items-center border-b border-primary/10 px-4 py-3">
+    <aside className="flex min-h-full w-52 shrink-0 flex-col border-r border-slate-200/80 bg-surface shadow-sidebar">
+      <div className="flex shrink-0 items-center border-b border-slate-200/80 px-5 py-4">
         <Image
           src="/geotab.png"
-          alt="GEOTAB"
+          alt="Geotab"
           width={110}
           height={28}
           className="h-7 w-auto object-contain object-left"
@@ -37,27 +37,24 @@ export function Sidebar() {
         />
       </div>
 
-      <nav className="flex-1 overflow-y-auto p-2">
+      <nav className="flex-1 overflow-y-auto px-3 py-4">
         {nav.map(({ href, label, badge }) => {
           const isActive = pathname === href;
-
           return (
             <Link
               key={label}
               href={href}
-              className={`mb-0.5 flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors ${
+              className={`mb-1 flex items-center rounded-full px-5 py-3 text-sm font-medium transition-colors ${
                 isActive
-                  ? "bg-accent text-white"
-                  : "text-primary/80 hover:bg-surface hover:text-primary"
+                  ? "bg-accent text-white shadow-sm"
+                  : "text-muted hover:bg-slate-100 hover:text-primary"
               }`}
             >
               <span>{label}</span>
-              {badge != null ? (
-                <span className="flex h-5 min-w-[1.25rem] items-center justify-center rounded bg-accent text-xs font-medium text-white">
+              {badge != null && (
+                <span className="ml-2 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-accent/90 text-xs font-medium text-white">
                   {badge}
                 </span>
-              ) : (
-                <span className="text-primary/40">+</span>
               )}
             </Link>
           );

@@ -42,8 +42,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-sm bg-white p-8 rounded-xl shadow-sm border border-gray-200">
+    <div className="min-h-screen flex items-center justify-center bg-surface px-6 py-8">
+      <div className="w-full max-w-sm bg-surfaceCard p-8 rounded-card shadow-card border border-slate-200">
         
         {/* Logo */}
         <div className="flex flex-col items-center" style={{ marginBottom: "20px" }}>

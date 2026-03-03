@@ -5,6 +5,7 @@ import { collection, getDocs, limit, query } from "firebase/firestore";
 
 import { db } from "@/lib/firebaseClient";
 import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
+import { PageContent } from "@/components/PageContent";
 
 import CheckinPage from "../../driver/checkin/page";
 
@@ -55,33 +56,25 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div className="min-h-full">
-      <div className="px-6 pb-10 pt-8">
-        <div className="mb-6">
-          <div className="text-lg font-semibold text-primary">
-            Driver Dashboard
-          </div>
-          <div className="mt-1 text-sm text-primary/60">
-            Welcome back! Here&apos;s your overview for today.
-          </div>
-
-          {loadError && (
-            <div className="mt-2 text-xs text-red-600">
-              Load error: {loadError}
-            </div>
-          )}
-        </div>
-
-        <DashboardTabs
-          defaultActiveKey="checkin"
-          tabs={{
-            checkin: <CheckinPage />,
-          }}
-          labels={{
-            checkin: "Check-In",
-          }}
-        />
-      </div>
-    </div>
+    <PageContent>
+      <header className="mb-6">
+        <h1 className="text-2xl font-bold tracking-tight text-primary">Driver Dashboard</h1>
+        <p className="mt-1 text-muted">
+          Welcome back! Here&apos;s your overview for today.
+        </p>
+        {loadError && (
+          <p className="mt-2 text-xs text-red-600">Load error: {loadError}</p>
+        )}
+      </header>
+      <DashboardTabs
+        defaultActiveKey="checkin"
+        tabs={{
+          checkin: <CheckinPage />,
+        }}
+        labels={{
+          checkin: "Check-In",
+        }}
+      />
+    </PageContent>
   );
 }
