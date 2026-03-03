@@ -30,3 +30,5 @@ Open [http://localhost:3000](http://localhost:3000).
 - `src/app/` – Pages (Dashboard, Tracking, Leaderboard) and layout
 - `src/components/` – KPICard, ChartCard, TruckTable, MapPanel, DriverDrawer, BadgePill, LeaderboardTable, DriverChallenge, Sidebar
 - `src/lib/fakeData.ts` – Types and seeded data generators
+
+Contributers: Marco, Dennis, Melvika, Violet
