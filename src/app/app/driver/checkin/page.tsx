@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getDrivers, getTrucks, type Driver } from "@/lib/fakeData";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "@/lib/firebaseClient";
+import { getTrucks } from "@/lib/fakeData";
 import {
   computeReadiness,
   riskColor,
@@ -16,12 +18,17 @@ const MOOD_LABELS = ["", "Exhausted", "Tired", "Okay", "Good", "Energised"];
 const STRESS_LABELS = ["", "Very Stressed", "Stressed", "Neutral", "Calm", "Very Calm"];
 
 export default function CheckinPage() {
-  const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [driverId, setDriverId] = useState("");
+  const [driverName, setDriverName] = useState<string | null>(null);
+  const [uid, setUid] = useState<string | null>(null);
+
   useEffect(() => {
-    const d = getDrivers();
-    setDrivers(d);
-    setDriverId(d[0]?.id ?? "");
+    const user = auth.currentUser;
+    if (!user) return;
+    setUid(user.uid);
+    getDoc(doc(db, "users", user.uid)).then((snap) => {
+      const data = snap.data();
+      setDriverName(data?.name ?? data?.email ?? "Driver");
+    });
   }, []);
 
   const [mood, setMood]         = useState(3);
@@ -32,12 +39,25 @@ export default function CheckinPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const driver = drivers.find((d) => d.id === driverId);
-    const truck  = getTrucks().find((t) => t.driverId === driverId);
-    if (!driver || !truck) return;
+    if (!driverName) return;
+
+    // Build a driver object from the logged-in user's info
+    const driver = {
+      id: uid ?? "driver-user",
+      name: driverName,
+      truckId: "TRK-1000",
+      safetyScore: 82,
+      mpg: 6.5,
+      onTimePercent: 92,
+      totalPoints: 80,
+      badges: [] as string[],
+    };
+
+    // Use the first available truck for vehicle health scoring
+    const truck = getTrucks()[0]!;
 
     const checkin: WellnessCheckin = {
-      driverId,
+      driverId: driver.id,
       mood,
       stress,
       sleepHours: sleep,
@@ -72,22 +92,14 @@ export default function CheckinPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Driver selector */}
+          {/* Driver name display */}
           <div className="border border-primary/15 bg-white p-4">
-            <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-primary/70">
-              Who are you?
-            </label>
-            <select
-              value={driverId}
-              onChange={(e) => setDriverId(e.target.value)}
-              className="w-full border border-primary/20 bg-surface px-3 py-2 text-sm text-primary focus:border-accent focus:outline-none"
-            >
-              {drivers.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name}
-                </option>
-              ))}
-            </select>
+            <div className="text-xs font-semibold uppercase tracking-wide text-primary/70 mb-1">
+              Checking in as
+            </div>
+            <div className="text-sm font-medium text-primary">
+              {driverName ?? "Loading…"}
+            </div>
           </div>
 
           {/* Mood */}

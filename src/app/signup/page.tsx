@@ -22,9 +22,11 @@ function friendlyAuthError(code?: string) {
     case "auth/weak-password":
       return "Password is too weak. Use at least 6 characters.";
     case "auth/operation-not-allowed":
-      return "Email/password sign-in is not enabled in Firebase Auth.";
+      return "Email/password sign-in is not enabled — go to Firebase Console → Authentication → Sign-in method and enable Email/Password.";
+    case "auth/invalid-api-key":
+      return "Invalid Firebase API key — check your .env.local file has the correct NEXT_PUBLIC_FIREBASE_API_KEY.";
     default:
-      return "Sign up failed. Please try again.";
+      return `Sign up failed (${code ?? "unknown"}). Check the browser console for details.`;
   }
 }
 
@@ -32,6 +34,7 @@ export default function SignupPage() {
   const router = useRouter();
 
   const [role, setRole] = useState<Role>("driver");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -43,6 +46,8 @@ export default function SignupPage() {
     setError(null);
 
     const e = email.trim();
+    const n = name.trim();
+    if (role === "driver" && !n) return setError("Please enter your full name.");
     if (!e) return setError("Email is required.");
     if (!password) return setError("Password is required.");
     if (password.length < 6) return setError("Password must be at least 6 characters.");
@@ -54,11 +59,12 @@ export default function SignupPage() {
       // 1) Create Firebase Auth user
       const cred = await createUserWithEmailAndPassword(auth, e, password);
 
-      // 2) Store role in Firestore
+      // 2) Store role (and name for drivers) in Firestore
       await setDoc(doc(db, "users", cred.user.uid), {
         uid: cred.user.uid,
         email: e,
-        role, // "manager" | "driver"
+        role,
+        ...(role === "driver" ? { name: n } : {}),
         createdAt: serverTimestamp(),
       });
 
@@ -126,6 +132,20 @@ export default function SignupPage() {
               </button>
             </div>
           </div>
+
+          {/* Name — drivers only */}
+          {role === "driver" && (
+            <div>
+              <label className="text-xs font-medium text-primary/70">Full name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Alex Rivera"
+                className="mt-2 w-full rounded-lg border border-primary/20 bg-white px-3 py-2 text-sm text-primary placeholder:text-primary/40 focus:border-accent focus:outline-none"
+              />
+            </div>
+          )}
 
           {/* Email */}
           <div>

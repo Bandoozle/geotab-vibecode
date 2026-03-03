@@ -20,9 +20,10 @@ const RECOMMENDED_ACTION: Record<string, string> = {
 
 interface ManagerAlertProps {
   readiness: DriverReadiness;
+  onDismiss?: () => void;
 }
 
-export function ManagerAlert({ readiness }: ManagerAlertProps) {
+export function ManagerAlert({ readiness, onDismiss }: ManagerAlertProps) {
   const [acknowledged, setAcknowledged] = useState(false);
   const { driver, riskLevel, totalScore, triggers, complianceScore } = readiness;
 
@@ -40,12 +41,22 @@ export function ManagerAlert({ readiness }: ManagerAlertProps) {
         <span>
           <span className="font-medium text-primary/70">{driver.name}</span> — acknowledged
         </span>
-        <button
-          onClick={() => setAcknowledged(false)}
-          className="text-xs text-primary/40 hover:text-primary/70"
-        >
-          Undo
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setAcknowledged(false)}
+            className="text-xs text-primary/40 hover:text-primary/70"
+          >
+            Undo
+          </button>
+          {onDismiss && (
+            <button
+              onClick={onDismiss}
+              className="text-xs text-red-400 hover:text-red-600"
+            >
+              Dismiss
+            </button>
+          )}
+        </div>
       </div>
     );
   }

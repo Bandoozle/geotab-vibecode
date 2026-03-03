@@ -35,7 +35,15 @@ export default function LoginPage() {
   
       router.push(role === "manager" ? "/app/manager/dashboard" : "/app/driver/driverDashboard");
     } catch (err: any) {
-      setError("Invalid email or password.");
+      const code: string = err?.code ?? "";
+      if (code === "auth/operation-not-allowed") {
+        setError("Email/password sign-in not enabled — enable it in Firebase Console → Authentication → Sign-in method.");
+      } else if (code === "auth/invalid-api-key") {
+        setError("Invalid Firebase API key — check .env.local.");
+      } else {
+        setError(`Login failed (${code || "unknown"}). Check browser console.`);
+      }
+      console.error("Login error:", err);
     } finally {
       setLoading(false);
     }

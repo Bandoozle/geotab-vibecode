@@ -262,10 +262,25 @@ export function SafetyWellnessTab({
     return points.reduce((a, b) => a + b, 0) / points.length;
   }, [moodByDay]);
 
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+
   const redDrivers = useMemo(
-    () => filtered.filter((r) => r.riskLevel === "red").slice(0, 9),
-    [filtered]
+    () =>
+      filtered
+        .filter((r) => r.riskLevel === "red")
+        .filter((r) => {
+          const id = (r.driver as any)?.id ?? (r.driver as any)?.name ?? "";
+          return !dismissedIds.has(id);
+        })
+        .slice(0, 9),
+    [filtered, dismissedIds]
   );
+
+  function dismissAlert(r: DriverReadiness) {
+    const id = (r.driver as any)?.id ?? (r.driver as any)?.name ?? "";
+    if (!id) return;
+    setDismissedIds((prev) => new Set([...prev, id]));
+  }
 
   const RiskPieTooltip = ({ active, payload }: { active?: boolean; payload?: any[] }) => {
     if (!active || !payload?.length) return null;
@@ -324,6 +339,81 @@ export function SafetyWellnessTab({
         <KpiCard label="Avg total readiness score" value={isLoaded ? fmt(avgTotalScore) : "—"} sublabel="0–100 (demo)" />
       </div>
 
+      {/* Avg score breakdown + Trigger distribution */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <DashboardCard title="Average Score by Dimension">
+          <div className="h-60">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={avgScores} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+                <XAxis dataKey="metric" tick={{ fontSize: 11, fill: AXIS_STROKE }} stroke={AXIS_STROKE} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: AXIS_STROKE }} stroke={AXIS_STROKE} />
+                <Tooltip contentStyle={{ backgroundColor: "#fff", border: "1px solid #eff2f7" }} />
+                <ReferenceLine
+                  y={avgScoresAvg}
+                  stroke={AVG_STROKE}
+                  strokeWidth={2}
+                  strokeDasharray="6"
+                  label={{ value: "Avg", position: "insideTopRight", fill: AVG_STROKE, fontSize: 11 }}
+                />
+                <Bar dataKey="score" fill="#25477b" radius={[3, 3, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <p className="mt-2 text-xs text-primary/60">Scores 0–100. Average line shown.</p>
+        </DashboardCard>
+
+        <DashboardCard title="Risk Triggers (drivers flagged per dimension)">
+          <div className="h-60">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={triggersData} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+                <XAxis dataKey="trigger" tick={{ fontSize: 11, fill: AXIS_STROKE }} stroke={AXIS_STROKE} />
+                <YAxis tick={{ fontSize: 11, fill: AXIS_STROKE }} stroke={AXIS_STROKE} />
+                <Tooltip contentStyle={{ backgroundColor: "#fff", border: "1px solid #eff2f7" }} />
+                <ReferenceLine
+                  y={triggersAvg}
+                  stroke={AVG_STROKE}
+                  strokeWidth={2}
+                  strokeDasharray="6"
+                  label={{ value: "Avg", position: "insideTopRight", fill: AVG_STROKE, fontSize: 11 }}
+                />
+                <Bar dataKey="count" fill="#dc2626" radius={[3, 3, 0, 0]} name="Drivers flagged" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <p className="mt-2 text-xs text-primary/60">Count of drivers with a low score per dimension.</p>
+        </DashboardCard>
+      </div>
+
+      {/* Mood / Stress / Sleep trend */}
+      <DashboardCard title="Wellness Trends by Day (avg mood, stress, sleep from check-ins)">
+        <div className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={moodByDay} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+              <XAxis dataKey="day" tick={{ fontSize: 11, fill: AXIS_STROKE }} stroke={AXIS_STROKE} />
+              <YAxis domain={[0, 10]} tick={{ fontSize: 11, fill: AXIS_STROKE }} stroke={AXIS_STROKE} />
+              <Tooltip contentStyle={{ backgroundColor: "#fff", border: "1px solid #eff2f7" }} />
+              <ReferenceLine
+                y={moodOverallAvg}
+                stroke={AVG_STROKE}
+                strokeWidth={2}
+                strokeDasharray="6"
+                label={{ value: "Mood avg", position: "insideTopRight", fill: AVG_STROKE, fontSize: 10 }}
+              />
+              <Line type="monotone" dataKey="avgMood" stroke="#16a34a" strokeWidth={2} dot name="Mood (1–5)" />
+              <Line type="monotone" dataKey="avgStress" stroke="#dc2626" strokeWidth={2} dot name="Stress (1–5)" />
+              <Line type="monotone" dataKey="avgSleep" stroke="#0078d3" strokeWidth={2} dot name="Sleep (hrs)" />
+              <Legend wrapperStyle={{ fontSize: "11px" }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+        <p className="mt-2 text-xs text-primary/60">
+          Mood &amp; stress scale 1–5. Sleep in hours. Only days with check-ins shown with values.
+        </p>
+      </DashboardCard>
+
       <div className="grid gap-6 lg:grid-cols-2">
         <DashboardCard title="Risk Distribution (hover shows yesterday + % change; click slice filters)">
           <div className="h-72">
@@ -340,6 +430,10 @@ export function SafetyWellnessTab({
                   labelLine={false}
                   activeIndex={riskActiveIndex}
                   onMouseEnter={(_: any, idx: number) => setRiskActiveIndex(idx)}
+                  onClick={(_: any, idx: number) => {
+                    const r = riskCounts[idx];
+                    if (r) toggleRisk(r.key);
+                  }}
                   style={{ cursor: "pointer" }}
                 >
                   {(riskCounts ?? []).map((_: any, i: number) => (
@@ -374,6 +468,7 @@ export function SafetyWellnessTab({
                 <ManagerAlert
                   key={(r.driver as any)?.id ?? (r.driver as any)?.name ?? `${Math.random()}`}
                   readiness={r}
+                  onDismiss={() => dismissAlert(r)}
                 />
               ))}
             </div>
