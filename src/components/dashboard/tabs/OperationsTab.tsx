@@ -273,7 +273,7 @@ export function OperationsTab({
 
       {/* Charts */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <DashboardCard title="Idling Breakdown by Vehicle Type">
+        <DashboardCard title="Idling Breakdown by Vehicle Type (click slice = vehicle filter)">
           <div className="h-72 sm:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -293,6 +293,17 @@ export function OperationsTab({
                             : `${String(name ?? "")} : ${Number(value ?? 0).toLocaleString()}`
                   }
                   labelLine={false}
+                  style={{ cursor: "pointer" }}
+                  onClick={(_: any, idx: number) => {
+                    const row = idlingData[idx];
+                    if (!row) return;
+                    const vt = String(row.name ?? "");
+                    if (!vt) return;
+                    setFilters((prev) => ({
+                      ...prev,
+                      vehicleType: prev.vehicleType === (vt as any) ? null : (vt as any),
+                    }));
+                  }}
                 >
                   {idlingData.map((_: any, i: number) => (
                     <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
@@ -303,10 +314,12 @@ export function OperationsTab({
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-3 text-xs text-primary/60">No vehicle-type filtering (view-only).</div>
+          <div className="mt-3 text-xs text-primary/60">
+            Filter: <span className="font-medium text-primary">{filters.vehicleType ?? "all"}</span>
+          </div>
         </DashboardCard>
 
-        <DashboardCard title="Fleet Weekly Mileage (by day)">
+        <DashboardCard title="Fleet Weekly Mileage (click bar = day filter)">
           <div className="h-72 sm:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={mileageChartData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
@@ -314,7 +327,19 @@ export function OperationsTab({
                 <XAxis dataKey="day" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip contentStyle={{ backgroundColor: "#fff", border: "1px solid #eff2f7" }} />
-                <Bar dataKey="miles" fill={BAR_FILL} />
+                <Bar
+                  dataKey="miles"
+                  fill={BAR_FILL}
+                  cursor="pointer"
+                  onClick={(bar: any) => {
+                    const d = String(bar?.day ?? "");
+                    if (!d) return;
+                    setFilters((prev) => ({
+                      ...prev,
+                      day: prev.day === (d as any) ? null : (d as any),
+                    }));
+                  }}
+                />
                 <ReferenceLine
                   y={mileageAvg}
                   stroke={AVG_STROKE}
@@ -331,10 +356,12 @@ export function OperationsTab({
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-3 text-xs text-primary/60">No day filtering (view-only).</div>
+          <div className="mt-3 text-xs text-primary/60">
+            Filter: <span className="font-medium text-primary">{filters.day ?? "all days"}</span>
+          </div>
         </DashboardCard>
 
-        <DashboardCard title="Fuel Burn Trend (last 3 months)">
+        <DashboardCard title="Fuel Burn Trend (click bar = month filter)">
           <div className="h-72 sm:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={fuelChartData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
@@ -342,12 +369,26 @@ export function OperationsTab({
                 <XAxis dataKey="month" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip contentStyle={{ backgroundColor: "#fff", border: "1px solid #eff2f7" }} />
-                <Bar dataKey="fuelBurnt" fill="#eff2f7" />
+                <Bar
+                  dataKey="fuelBurnt"
+                  fill="#eff2f7"
+                  cursor="pointer"
+                  onClick={(bar: any) => {
+                    const m = String(bar?.month ?? "");
+                    if (!m) return;
+                    setFilters((prev) => ({
+                      ...prev,
+                      month: prev.month === (m as any) ? null : (m as any),
+                    }));
+                  }}
+                />
                 <Line type="monotone" dataKey="trend" stroke={LINE_STROKE} strokeWidth={2} dot={!isSmDown} />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-3 text-xs text-primary/60">No month filtering (view-only).</div>
+          <div className="mt-3 text-xs text-primary/60">
+            Filter: <span className="font-medium text-primary">{filters.month ?? "all months"}</span>
+          </div>
         </DashboardCard>
 
         <DashboardCard title="Top 5 Aggressive Drivers (events)">
